@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Journal Log</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <h1>Journal Log</h1>
+
+  <div class="user-info">
+    <span id="current-user"></span>
+    <button id="logout-btn" class="secondary" type="button" hidden>
+      Logout
+    </button>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- =========================
+       Login Screen
+       ========================= -->
+  <section id="login-screen">
+    <h2>Login</h2>
+
+    <input id="login-username" class="input" placeholder="Username" />
+    <input id="login-password" class="input" type="password" placeholder="Password" />
+
+    <label class="remember-me">
+      <input type="checkbox" id="remember-me" />
+      Remember me on this device
+    </label>
+
+    <button id="login-btn" class="primary" type="button">
+      Login
+    </button>
+
+    <p>
+      Join Today
+      <button id="show-register-btn" class="link" type="button">
+        Create Account
+      </button>
+    </p>
+  </section>
+
+  <!-- =========================
+       Register Screen
+       ========================= -->
+  <section id="register-screen" hidden>
+    <h2>Create Account</h2>
+
+    <input id="register-username" class="input" placeholder="Username" />
+    <input id="register-password" class="input" type="password" placeholder="Password" />
+
+    <button id="register-btn" class="primary" type="button">
+      Create Account
+    </button>
+
+    <button id="cancel-register-btn" class="secondary" type="button">
+      Cancel
+    </button>
+  </section>
+
+  <!-- =========================
+       Workout List (Home)
+       ========================= -->
+  <section id="workout-list" hidden>
+
+<button id="new-workout-btn" class="primary">
+  <i class="fa-solid fa-play"></i>
+  Start Workout
+</button>
+
+<button id="continue-workout-btn" class="secondary" hidden>
+  <i class="fa-solid fa-rotate-right"></i>
+  Continue Workout
+</button>
+
+
+    <h3>Templates</h3>
+    <ul id="template-list"></ul>
+
+    <h3>Workout History</h3>
+    <ul id="workout-history"></ul>
+
+  </section>
+
+  <!-- =========================
+       Active Workout
+       ========================= -->
+  <section id="active-workout" hidden>
+
+    <input
+      id="workout-name"
+      class="input"
+      placeholder="Workout Name (e.g. Push Day)"
+    />
+
+    <!-- Rest Timer -->
+    <label class="toggle-row">
+  <input type="checkbox" id="rest-toggle" checked />
+  Enable Rest Timer
+</label>
+    <div id="rest-timer" class="rest-timer" hidden>
+      <div id="rest-time-display">30</div>
+
+      <div class="rest-controls">
+<button id="rest-30-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 30s
+</button>
+
+<button id="rest-60-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 60s
+</button>
+
+<button id="rest-90-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 90s
+</button>
+
+<button id="cancel-rest-btn" class="link">
+  <i class="fa-solid fa-xmark"></i>
+  Cancel
+</button>
+
+      </div>
+    </div>
+
+    <!-- Exercises -->
+    <div id="exercise-list"></div>
+
+    <!-- Add Exercise -->
+<button id="add-exercise-btn" class="secondary" type="button">
+  <i class="fa-solid fa-plus"></i>
+  Add Exercise
+</button>
+
+
+<button id="save-template-btn" class="secondary">
+  <i class="fa-solid fa-bookmark"></i>
+  Save Template
+</button>
+
+<button id="finish-workout-btn" class="primary">
+  <i class="fa-solid fa-check"></i>
+  Finish Workout
+</button>
+
+
+    <button id="back-to-list-btn" class="secondary" type="button">
+      Back
+    </button>
+        <!-- Workout Timer -->
+    <div id="workout-timer" class="timer">00:00</div>
+        <div class="timer-controls">
+      <button id="pause-timer-btn" class="secondary" type="button">Pause</button>
+      <button id="resume-timer-btn" class="secondary" type="button" hidden>
+        Resume
+      </button>
+    </div>
+
+  </section>
+
+  <!-- =========================
+       View Past Workout
+       ========================= -->
+  <section id="view-workout" hidden>
+    <h2 id="view-workout-title"></h2>
+    <div id="view-workout-date"></div>
+
+    <div id="view-exercises"></div>
+
+    <button id="back-btn" class="secondary" type="button">
+      Back
+    </button>
+  </section>
+
+</main>
+
+<!-- =========================
+     Workout Summary
+     ========================= -->
+<section id="workout-summary" hidden>
+  <h2>Workout Complete</h2>
+
+  <p><strong>Name:</strong> <span id="summary-name"></span></p>
+  <p><strong>Date:</strong> <span id="summary-date"></span></p>
+  <p><strong>Time:</strong> <span id="summary-time"></span></p>
+  <p><strong>Exercises:</strong> <span id="summary-exercises"></span></p>
+  <p><strong>Total Sets:</strong> <span id="summary-sets"></span></p>
+
+  <button id="summary-done-btn" class="primary" type="button">
+    Finish
+  </button>
+</section>
+
+<!-- =========================
+     Add Exercise Modal
+     ========================= -->
+<div id="exercise-modal" class="modal" hidden>
+  <div class="modal-content">
+    <h3>Add Exercise</h3>
+
+    <input
+      id="exercise-modal-input"
+      class="input"
+      placeholder="Exercise name"
+      autocomplete="off"
+    />
+
+    <ul
+      id="exercise-modal-suggestions"
+      class="exercise-suggestions"
+    ></ul>
+
+    <div class="modal-actions">
+      <button class="secondary" type="button" onclick="closeExerciseModal()">
+        Cancel
+      </button>
+
+      <button id="exercise-modal-add-btn" class="primary" type="button">
+        Add
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =========================
+     Scripts (ORDER MATTERS)
+     ========================= -->
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
