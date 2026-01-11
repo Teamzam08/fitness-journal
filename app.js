@@ -272,15 +272,22 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      SAVE TEMPLATE (FIXED)
      ========================= */
-  saveTemplateBtn?.addEventListener("click", () => {
-    if (!lastFinishedWorkout) {
-      alert("No completed workout to save.");
-      return;
-    }
+saveTemplateBtn?.addEventListener("click", () => {
+  if (!activeWorkout) {
+    alert("No active workout to save.");
+    return;
+  }
 
-    saveTemplateFromWorkout(lastFinishedWorkout);
-    renderTemplates(getCurrentUser().templates || []);
-  });
+  const templateWorkout = structuredClone(activeWorkout);
+  templateWorkout.id = crypto.randomUUID();
+  templateWorkout.date = null; // templates don't need dates
+
+  saveTemplateFromWorkout(templateWorkout);
+  renderTemplates(getCurrentUser().templates || []);
+
+  alert("Template saved!");
+});
+
 
   /* =========================
      TEMPLATES
