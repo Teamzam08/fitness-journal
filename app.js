@@ -348,7 +348,7 @@ cancelRestBtn?.addEventListener("click", () => {
       const id = deleteBtn.dataset.id;
       if (confirm("Delete this template?")) {
         deleteTemplate(id);
-        renderTemplates(getCurrentUser().templates);
+        renderTemplates(getCurrentUser().templates || []);
       }
       return;
     }
