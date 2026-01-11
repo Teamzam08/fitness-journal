@@ -1,4 +1,10 @@
 console.log("ui.js loaded");
+document.addEventListener("DOMContentLoaded", () => {
+  const versionEl = document.getElementById("app-version");
+  if (versionEl && window.APP_VERSION) {
+    versionEl.textContent = `Version ${window.APP_VERSION}`;
+  }
+});
 
 /* =========================
    Current User Display
@@ -494,3 +500,4 @@ function closeExerciseModal() {
 
   modal.hidden = true;
 }
+
