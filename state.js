@@ -204,9 +204,12 @@ function hasWorkoutData(workout) {
    ========================= */
 function saveTemplateFromWorkout(workout) {
   const user = getCurrentUser();
-  if (!user || !workout || !workout.exercises.length) return;
+  if (!user || !workout) return;
 
-  user.templates ??= [];
+  // ✅ HARD GUARANTEE
+  if (!Array.isArray(user.templates)) {
+    user.templates = [];
+  }
 
   const template = {
     id: uuid(),
@@ -219,6 +222,7 @@ function saveTemplateFromWorkout(workout) {
   user.templates.push(template);
   saveState(state);
 }
+
 
 function startWorkoutFromTemplate(templateId) {
   const user = getCurrentUser();
