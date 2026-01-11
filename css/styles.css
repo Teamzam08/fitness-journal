@@ -400,3 +400,8 @@ button i {
 .overlay {
   pointer-events: none;
 }
+.app-version {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-top: 4px;
+}
