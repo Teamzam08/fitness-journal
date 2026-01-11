@@ -423,3 +423,14 @@ button i {
 .app-header img {
   flex-shrink: 0;
 }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
