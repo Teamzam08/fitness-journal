@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const templateList = document.getElementById("template-list");
   const saveTemplateBtn = document.getElementById("save-template-btn");
   const summaryDoneBtn = document.getElementById("summary-done-btn");
+  const workoutHistoryEl = document.getElementById("workout-history");
 
   const modalInput = document.getElementById("exercise-modal-input");
   const modalAddBtn = document.getElementById("exercise-modal-add-btn");
@@ -130,6 +131,21 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     showLogin();
   }
+/* =========================
+   WORKOUT HISTORY (VIEW PAST)
+   ========================= */
+workoutHistoryEl?.addEventListener("click", e => {
+  const li = e.target.closest("li");
+  if (!li?.dataset.id) return;
+
+  const workout = getCurrentUser().workouts.find(
+    w => w.id === li.dataset.id
+  );
+
+  if (workout) {
+    renderWorkoutView(workout);
+  }
+});
 
   /* =========================
      START / CONTINUE WORKOUT
