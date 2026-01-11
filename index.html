@@ -1,407 +1,248 @@
-/* Respect HTML hidden attribute */
-[hidden] {
-  display: none !important;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Approved Journal Log/title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
 
-:root {
-  --bg: #0f172a;
-  --panel: #111827;
-  --card: #1f2933;
-  --border: #334155;
-  --text: #e5e7eb;
-  --muted: #9ca3af;
-  --accent: #38bdf8;
-  --accent-hover: #0ea5e9;
-  --danger: #ef4444;
-}
+<header class="app-header">
+  <h1>Approved Journal Log</h1>
+  <div class="app-version" id="app-version"></div>
+  <div class="user-info">
+    <span id="current-user"></span>
+    <button id="logout-btn" class="secondary" type="button" hidden>
+      Logout
+    </button>
+  </div>
+</header>
 
-* {
-  box-sizing: border-box;
-}
+<main id="app">
 
-body {
-  margin: 0;
-  background: linear-gradient(180deg, #020617, #0f172a);
-  color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+  <!-- =========================
+       Login Screen
+       ========================= -->
+  <section id="login-screen">
+    <h2>Login</h2>
 
+    <input id="login-username" class="input" placeholder="Username" />
+    <input id="login-password" class="input" type="password" placeholder="Password" />
 
-..app-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(15, 23, 42, 0.9);
-  backdrop-filter: blur(6px);
-}
+    <label class="remember-me">
+      <input type="checkbox" id="remember-me" />
+      Remember me on this device
+    </label>
 
-.app-header h1 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-}
+    <button id="login-btn" class="primary" type="button">
+      Login
+    </button>
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--muted);
-}
+    <p>
+      Join Today
+      <button id="show-register-btn" class="link" type="button">
+        Create Account
+      </button>
+    </p>
+  </section>
 
+  <!-- =========================
+       Register Screen
+       ========================= -->
+  <section id="register-screen" hidden>
+    <h2>Create Account</h2>
 
-main {
-  padding: 1rem;
-}
+    <input id="register-username" class="input" placeholder="Username" />
+    <input id="register-password" class="input" type="password" placeholder="Password" />
 
-button {
-  cursor: pointer;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-weight: 500;
-  border: none;
-  transition: all 0.15s ease;
-}
+    <button id="register-btn" class="primary" type="button">
+      Create Account
+    </button>
 
-button.primary {
-  background: var(--accent);
-  color: #020617;
-}
+    <button id="cancel-register-btn" class="secondary" type="button">
+      Cancel
+    </button>
+  </section>
 
-button.primary:hover {
-  background: var(--accent-hover);
-}
+  <!-- =========================
+       Workout List (Home)
+       ========================= -->
+  <section id="workout-list" hidden>
 
-button.secondary {
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
+<button id="new-workout-btn" class="primary">
+  <i class="fa-solid fa-play"></i>
+  Start Workout
+</button>
 
-button.secondary:hover {
-  background: #273449;
-}
-
-button.link {
-  background: none;
-  color: var(--accent);
-  padding: 0;
-}
-
-button.link:hover {
-  text-decoration: underline;
-}
-
-button.delete-template-btn {
-  background: none;
-  color: var(--danger);
-  font-size: 14px;
-}
-
-section {
-  padding: 20px;
-}
-
-#workout-list,
-#active-workout,
-#view-workout,
-#workout-summary {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-#workout-list ul,
-#template-list,
-#workout-history {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-#template-list li {
-  background: var(--card);
-  border: 1px solid var(--border);
-  padding: 12px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-#template-list li span {
-  font-weight: 500;
-}
-
-.primary {
-  background: #007aff;
-  color: white;
-}
-
-.secondary {
-  background: #e0e0e0;
-}
-
-.input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--text);
-  outline: none;
-}
-
-.input::placeholder {
-  color: var(--muted);
-}
-
-.input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
+<button id="continue-workout-btn" class="secondary" hidden>
+  <i class="fa-solid fa-rotate-right"></i>
+  Continue Workout
+</button>
 
 
-.exercise-card {
-  background: #e0e0e0;
-  color: #000000;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
+    <h3>Templates</h3>
+    <ul id="template-list"></ul>
 
-.set-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-  color: #000;
-}
+    <h3>Workout History</h3>
+    <ul id="workout-history"></ul>
+
+  </section>
+
+  <!-- =========================
+       Active Workout
+       ========================= -->
+  <section id="active-workout" hidden>
+
+    <input
+      id="workout-name"
+      class="input"
+      placeholder="Workout Name (e.g. Push Day)"
+    />
+
+    <!-- Rest Timer -->
+    <label class="toggle-row">
+  <input type="checkbox" id="rest-toggle" checked />
+  Enable Rest Timer
+</label>
+    <div id="rest-timer" class="rest-timer" hidden>
+      <div id="rest-time-display">30</div>
+
+      <div class="rest-controls">
+<button id="rest-30-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 30s
+</button>
+
+<button id="rest-60-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 60s
+</button>
+
+<button id="rest-90-btn" class="secondary">
+  <i class="fa-regular fa-clock"></i> 90s
+</button>
+
+<button id="cancel-rest-btn" class="link">
+  <i class="fa-solid fa-xmark"></i>
+  Cancel
+</button>
+
+      </div>
+    </div>
+
+    <!-- Exercises -->
+    <div id="exercise-list"></div>
+
+    <!-- Add Exercise -->
+<button id="add-exercise-btn" class="secondary" type="button">
+  <i class="fa-solid fa-plus"></i>
+  Add Exercise
+</button>
 
 
-.set-row input {
-  flex: 1;
-  padding: .5rem;
-}
+<button id="save-template-btn" class="secondary">
+  <i class="fa-solid fa-bookmark"></i>
+  Save Template
+</button>
 
-.set-row button {
-  width: 40px;
-  background: #ff3b30;
-  color: white;
-  border-radius: 6px;
-}
-.workout-history-item {
-  padding: .75rem;
-  margin-top: .5rem;
-  background: #089BC9;
-  border-radius: 6px;
-  font-size: .95rem;
-}
-.previous-note {
-  font-size: 0.85rem;
-  color: #555;
-  margin-bottom: 0.5rem;
-  font-style: italic;
-}
-#view-workout-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 0.25rem;
-}
+<button id="finish-workout-btn" class="primary">
+  <i class="fa-solid fa-check"></i>
+  Finish Workout
+</button>
 
-#view-workout-date {
-  font-size: 0.85rem;
-  color: #666;
-  margin-bottom: 1rem;
-}
 
-.timer {
-  font-size: 36px;
-  font-weight: 600;
-  text-align: center;
-  margin: 16px 0;
-}
+    <button id="back-to-list-btn" class="secondary" type="button">
+      Back
+    </button>
+        <!-- Workout Timer -->
+    <div id="workout-timer" class="timer">00:00</div>
+        <div class="timer-controls">
+      <button id="pause-timer-btn" class="secondary" type="button">Pause</button>
+      <button id="resume-timer-btn" class="secondary" type="button" hidden>
+        Resume
+      </button>
+    </div>
 
-.rest-timer {
-  background: #020617;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-}
+  </section>
 
-#rest-time-display {
-  font-size: 8rem;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
+  <!-- =========================
+       View Past Workout
+       ========================= -->
+  <section id="view-workout" hidden>
+    <h2 id="view-workout-title"></h2>
+    <div id="view-workout-date"></div>
 
-.rest-controls {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
+    <div id="view-exercises"></div>
 
-/* Rest complete alert */
-.rest-complete {
-  animation: pulse 1s infinite;
-  background: #d1ffd6;
-}
+    <button id="back-btn" class="secondary" type="button">
+      Back
+    </button>
+  </section>
 
-@keyframes pulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
+</main>
 
-.exercise-picker {
-  position: fixed;
-  top: 30%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111;
-  padding: 16px;
-  border-radius: 8px;
-  width: 300px;
-  z-index: 9999;
-}
-.exercise-suggestions {
-  position: absolute;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-top: 6px;
-  width: 100%;
-  max-height: 180px;
-  overflow-y: auto;
-  z-index: 10;
-}
+<!-- =========================
+     Workout Summary
+     ========================= -->
+<section id="workout-summary" hidden>
+  <h2>Workout Complete</h2>
 
-.exercise-suggestions li {
-  padding: 10px;
-  cursor: pointer;
-}
+  <p><strong>Name:</strong> <span id="summary-name"></span></p>
+  <p><strong>Date:</strong> <span id="summary-date"></span></p>
+  <p><strong>Time:</strong> <span id="summary-time"></span></p>
+  <p><strong>Exercises:</strong> <span id="summary-exercises"></span></p>
+  <p><strong>Total Sets:</strong> <span id="summary-sets"></span></p>
 
-.exercise-suggestions li:hover {
-  background: var(--card);
-}
-button:hover {
-  transform: translateY(-1px);
-}
+  <button id="summary-done-btn" class="primary" type="button">
+    Finish
+  </button>
+</section>
 
-button:active {
-  transform: translateY(0);
-}
-button i {
-  margin-right: 6px;
-}
+<!-- =========================
+     Add Exercise Modal
+     ========================= -->
+<div id="exercise-modal" class="modal" hidden>
+  <div class="modal-content">
+    <h3>Add Exercise</h3>
 
-.icon-btn {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-}
+    <input
+      id="exercise-modal-input"
+      class="input"
+      placeholder="Exercise name"
+      autocomplete="off"
+    />
 
-.icon-btn:hover {
-  color: var(--danger);
-}
+    <ul
+      id="exercise-modal-suggestions"
+      class="exercise-suggestions"
+    ></ul>
 
-.delete-template-btn {
-  background: none;
-  border: none;
-  color: var(--danger);
-  cursor: pointer;
-}
-#workout-history {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.workout-card {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
-}
+    <div class="modal-actions">
+      <button class="secondary" type="button" onclick="closeExerciseModal()">
+        Cancel
+      </button>
 
-.workout-card:hover {
-  background: rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
-}
-.workout-title {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-}
-.workout-date {
-  display: block;
-  margin-top: 4px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-}
+      <button id="exercise-modal-add-btn" class="primary" type="button">
+        Add
+      </button>
+    </div>
+  </div>
+</div>
 
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  font-size: 14px;
-  color: rgba(255,255,255,0.85);
-}
+<!-- =========================
+     Scripts (ORDER MATTERS)
+     ========================= -->
+<link rel="stylesheet" href="css/styles.css" />
 
-/* =========================
-   Modal
-   ========================= */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
+<script src="js/utils.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 
-.modal-content {
-  background: #fff;
-  width: 90%;
-  max-width: 400px;
-  padding: 1.25rem;
-  border-radius: 12px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.modal-actions button {
-  flex: 1;
-}
-
-.workout-history-item {
-  position: relative;
-  z-index: 2;
-  cursor: pointer;
-}
-#workout-list {
-  position: relative;
-  z-index: 1;
-}
-.background,
-.app-background,
-.overlay {
-  pointer-events: none;
-}
-.app-version {
-  font-size: 0.75rem;
-  opacity: 0.6;
-  margin-top: 4px;
-}
+</body>
+</html>
