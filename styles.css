@@ -385,3 +385,18 @@ button i {
 .modal-actions button {
   flex: 1;
 }
+
+.workout-history-item {
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+}
+#workout-list {
+  position: relative;
+  z-index: 1;
+}
+.background,
+.app-background,
+.overlay {
+  pointer-events: none;
+}
