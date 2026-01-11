@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalSuggestions = document.getElementById("exercise-modal-suggestions");
 
   let activeWorkout = null;
+  let lastFinishedWorkout = null;
 
   /* =========================
      SCREEN HELPERS
@@ -60,16 +61,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updateHomeButtons();
   }
 
+  function syncRestToggle() {
+    if (restToggle && activeWorkout) {
+      restToggle.checked = !!activeWorkout.useRestTimer;
+    }
+  }
+
   /* =========================
      AUTH
      ========================= */
   document.getElementById("login-btn")?.addEventListener("click", async () => {
     try {
-      const username = document.getElementById("login-username").value.trim();
-      const password = document.getElementById("login-password").value;
-      const rememberMe = document.getElementById("remember-me")?.checked === true;
-
-      await loginUser(username, password, rememberMe);
+      await loginUser(
+        document.getElementById("login-username").value.trim(),
+        document.getElementById("login-password").value,
+        document.getElementById("remember-me")?.checked === true
+      );
 
       showApp();
       showCurrentUser(state.currentUser);
@@ -112,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* =========================
-     INITIAL LOAD (AUTOLOGIN)
+     INITIAL LOAD
      ========================= */
   if (state.currentUser && isTrustedDevice()) {
     showApp();
@@ -125,29 +132,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =========================
-     WORKOUT HISTORY
-     ========================= */
-  workoutHistoryEl?.addEventListener("click", e => {
-    const li = e.target.closest("li");
-    if (!li?.dataset.id) return;
-
-    const workout = getCurrentUser().workouts.find(w => w.id === li.dataset.id);
-    if (workout) renderWorkoutView(workout);
-  });
-
-  /* =========================
      START / CONTINUE WORKOUT
      ========================= */
-  function syncRestToggle() {
-    if (restToggle && activeWorkout) {
-      restToggle.checked = activeWorkout.useRestTimer;
-    }
-  }
-
   newWorkoutBtn?.addEventListener("click", () => {
     activeWorkout = startWorkout();
     workoutNameInput.value = "";
-
     syncRestToggle();
 
     showActiveWorkout();
@@ -172,17 +161,26 @@ document.addEventListener("DOMContentLoaded", () => {
   backBtn?.addEventListener("click", exitWorkoutView);
 
   /* =========================
-     REST TOGGLE
+     REST SETTINGS
      ========================= */
   restToggle?.addEventListener("change", e => {
     if (!activeWorkout) return;
-
     activeWorkout.useRestTimer = e.target.checked;
-
-    if (!e.target.checked) {
-      stopRest(); // immediately cancel
-    }
+    if (!e.target.checked) stopRest();
   });
+
+  function setRestDuration(seconds) {
+    if (!activeWorkout) return;
+    activeWorkout.restDuration = seconds;
+    activeWorkout.useRestTimer = true;
+    if (restToggle) restToggle.checked = true;
+    startRest(seconds);
+  }
+
+  rest30Btn?.addEventListener("click", () => setRestDuration(30));
+  rest60Btn?.addEventListener("click", () => setRestDuration(60));
+  rest90Btn?.addEventListener("click", () => setRestDuration(90));
+  cancelRestBtn?.addEventListener("click", stopRest);
 
   /* =========================
      ADD EXERCISE (MODAL)
@@ -206,9 +204,6 @@ document.addEventListener("DOMContentLoaded", () => {
     closeExerciseModal();
   });
 
-  /* =========================
-     EXERCISE MODAL – LIBRARY
-     ========================= */
   modalInput?.addEventListener("input", e => {
     const user = getCurrentUser();
     if (!user || !Array.isArray(user.exerciseLibrary)) return;
@@ -219,16 +214,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!value) return;
 
     user.exerciseLibrary
-      .filter(name => name.toLowerCase().includes(value))
+      .filter(n => n.toLowerCase().includes(value))
       .forEach(name => {
         const li = document.createElement("li");
         li.textContent = name;
-
-        li.addEventListener("click", () => {
+        li.onclick = () => {
           modalInput.value = name;
           clearExerciseModalSuggestions();
-        });
-
+        };
         modalSuggestions.appendChild(li);
       });
   });
@@ -236,87 +229,20 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      SETS & AUTO REST
      ========================= */
-  exerciseListEl?.addEventListener("click", e => {
+  exerciseListEl?.addEventListener("input", e => {
     if (!activeWorkout) return;
 
-    if (e.target.dataset.addSet !== undefined) {
-      addSet(activeWorkout, Number(e.target.dataset.addSet));
-      renderExercises(activeWorkout);
-    }
+    const { ex, set, field } = e.target.dataset;
+    if (!field) return;
 
-    if (e.target.dataset.removeSet !== undefined) {
-      removeSet(
-        activeWorkout,
-        Number(e.target.dataset.ex),
-        Number(e.target.dataset.removeSet)
-      );
-      renderExercises(activeWorkout);
+    updateSet(activeWorkout, +ex, +set, field, e.target.value);
+
+    const s = activeWorkout.exercises[ex].sets[set];
+    if (!s.completed && s.weight && s.reps && activeWorkout.useRestTimer) {
+      s.completed = true;
+      startRest(activeWorkout.restDuration || 30);
     }
   });
-
-exerciseListEl?.addEventListener("input", e => {
-  if (!activeWorkout) return;
-
-  const { ex, set, field } = e.target.dataset;
-  if (!field) return;
-
-  updateSet(
-    activeWorkout,
-    Number(ex),
-    Number(set),
-    field,
-    e.target.value
-  );
-
-  const s = activeWorkout.exercises[ex].sets[set];
-
-  if (!s.completed && s.weight && s.reps) {
-    s.completed = true;
-
-    if (activeWorkout.useRestTimer) {
-      startRest(activeWorkout.restDuration);
-    }
-  }
-});
-
-  /* =========================
-     TIMER CONTROLS
-     ========================= */
-  pauseBtn?.addEventListener("click", () => {
-    pauseTimer(activeWorkout);
-    stopTimerUI();
-    showResume();
-  });
-
-  resumeBtn?.addEventListener("click", () => {
-    resumeTimer(activeWorkout);
-    startTimerUI(activeWorkout);
-  });
-
-/* =========================
-   REST TIMER (SET DEFAULT)
-   ========================= */
-function setRestDuration(seconds) {
-  if (!activeWorkout) return;
-
-  activeWorkout.restDuration = seconds;
-  activeWorkout.useRestTimer = true;
-
-  if (restToggle) {
-    restToggle.checked = true;
-  }
-
-  startRest(seconds);
-}
-
-rest30Btn?.addEventListener("click", () => setRestDuration(30));
-rest60Btn?.addEventListener("click", () => setRestDuration(60));
-rest90Btn?.addEventListener("click", () => setRestDuration(90));
-
-cancelRestBtn?.addEventListener("click", () => {
-  stopRest();
-});
-
 
   /* =========================
      FINISH WORKOUT
@@ -328,8 +254,12 @@ cancelRestBtn?.addEventListener("click", () => {
     stopRest();
 
     activeWorkout.name = workoutNameInput.value || "Untitled Workout";
+    lastFinishedWorkout = structuredClone(activeWorkout);
+
     finishWorkout(activeWorkout);
-    showWorkoutSummary(activeWorkout);
+    activeWorkout = null;
+
+    showWorkoutSummary(lastFinishedWorkout);
   });
 
   summaryDoneBtn?.addEventListener("click", () => {
@@ -340,14 +270,26 @@ cancelRestBtn?.addEventListener("click", () => {
   });
 
   /* =========================
+     SAVE TEMPLATE (FIXED)
+     ========================= */
+  saveTemplateBtn?.addEventListener("click", () => {
+    if (!lastFinishedWorkout) {
+      alert("No completed workout to save.");
+      return;
+    }
+
+    saveTemplateFromWorkout(lastFinishedWorkout);
+    renderTemplates(getCurrentUser().templates || []);
+  });
+
+  /* =========================
      TEMPLATES
      ========================= */
   templateList?.addEventListener("click", e => {
-    const deleteBtn = e.target.closest(".delete-template-btn");
-    if (deleteBtn) {
-      const id = deleteBtn.dataset.id;
+    const del = e.target.closest(".delete-template-btn");
+    if (del) {
       if (confirm("Delete this template?")) {
-        deleteTemplate(id);
+        deleteTemplate(del.dataset.id);
         renderTemplates(getCurrentUser().templates || []);
       }
       return;
@@ -357,8 +299,6 @@ cancelRestBtn?.addEventListener("click", () => {
     if (!li?.dataset.id) return;
 
     activeWorkout = startWorkoutFromTemplate(li.dataset.id);
-    if (!activeWorkout) return;
-
     workoutNameInput.value = activeWorkout.name;
     syncRestToggle();
 
