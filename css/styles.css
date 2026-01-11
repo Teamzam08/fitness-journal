@@ -420,3 +420,6 @@ button i {
   border-radius: 6px;
 }
 
+.app-header img {
+  flex-shrink: 0;
+}
