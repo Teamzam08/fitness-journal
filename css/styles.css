@@ -404,4 +404,18 @@ button i {
   font-size: 0.75rem;
   opacity: 0.6;
   margin-top: 4px;
+
+  .app-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 8px; /* rounded square */
+}
+
 }
