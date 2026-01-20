@@ -1,3 +1,4 @@
+const APP_VERSION = "1.0.0";
 document.addEventListener("DOMContentLoaded", () => {
   console.log("app.js loaded");
 
