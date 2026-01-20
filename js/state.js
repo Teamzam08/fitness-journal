@@ -1,14 +1,22 @@
 /* =========================
    State Initialization
    ========================= */
-let state = loadState() || {};
 
-state.currentUser = state.currentUser || null;
-state.users = state.users || {};
+let state = loadState();
+
+if (!state || typeof state !== "object") {
+  state = {
+    currentUser: null,
+    users: {}
+  };
+}
+
+state.currentUser ??= null;
+state.users ??= {};
 
 /* =========================
    Normalize Existing Users
-   (CRITICAL for migrations)
+   (Migration Safe)
    ========================= */
 Object.values(state.users).forEach(user => {
   user.workouts ??= [];
@@ -31,7 +39,7 @@ function getCurrentUser() {
    ========================= */
 function createWorkout() {
   return {
-    id: uuid(),
+    id: crypto.randomUUID(),
     name: "",
     date: new Date().toISOString().split("T")[0],
     exercises: [],
@@ -39,13 +47,11 @@ function createWorkout() {
     elapsedSeconds: 0,
     isPaused: false,
 
-    // ✅ NEW
+    // Rest Timer Defaults
     useRestTimer: true,
     restDuration: 30
   };
 }
-
-
 
 /* =========================
    Timer Logic
@@ -88,7 +94,6 @@ function startWorkout() {
 function resumeWorkout() {
   const user = getCurrentUser();
   if (!user) return null;
-
   return user.activeWorkout || null;
 }
 
@@ -104,7 +109,7 @@ function finishWorkout(workout) {
     return;
   }
 
-  // ✅ Update exercise history
+  // Update exercise history
   workout.exercises.forEach(ex => {
     user.exerciseHistory[ex.name] = {
       lastSets: ex.sets.map(s => ({
@@ -120,7 +125,6 @@ function finishWorkout(workout) {
   saveState(state);
 }
 
-
 /* =========================
    Exercise Handling
    ========================= */
@@ -128,31 +132,27 @@ function addExerciseToWorkout(workout, name) {
   const user = getCurrentUser();
   if (!user || !workout) return;
 
-  // Normalize name
   name = name.trim();
   if (!name) return;
 
-  // ✅ Persist exercise name (deduplicated)
   if (!user.exerciseLibrary.includes(name)) {
     user.exerciseLibrary.push(name);
   }
 
-  const history = user.exerciseHistory[name] || {};
+  const history = user.exerciseHistory[name];
 
   workout.exercises.push({
-    id: uuid(),
+    id: crypto.randomUUID(),
     name,
     sets: [{ weight: "", reps: "", completed: false }],
-    previous: history.lastSets
+    previous: history?.lastSets
       ? history.lastSets.map(s => `${s.weight} x ${s.reps}`).join(", ")
       : null,
     notes: ""
   });
 
-  // 🔴 THIS WAS MISSING
   saveState(state);
 }
-
 
 function addSet(workout, exerciseIndex) {
   if (!workout) return;
@@ -162,11 +162,15 @@ function addSet(workout, exerciseIndex) {
     reps: "",
     completed: false
   });
+
+  saveState(state);
 }
 
 function removeSet(workout, exerciseIndex, setIndex) {
   if (!workout) return;
+
   workout.exercises[exerciseIndex].sets.splice(setIndex, 1);
+  saveState(state);
 }
 
 function updateSet(workout, exIndex, setIndex, field, value) {
@@ -175,14 +179,12 @@ function updateSet(workout, exIndex, setIndex, field, value) {
   const set = workout.exercises[exIndex].sets[setIndex];
   set[field] = value;
 
-  if (value === "") {
+  if (!value) {
     set.completed = false;
   }
 
-  // ✅ Persist changes
   saveState(state);
 }
-
 
 /* =========================
    Save Helpers
@@ -206,13 +208,10 @@ function saveTemplateFromWorkout(workout) {
   const user = getCurrentUser();
   if (!user || !workout) return;
 
-  // ✅ HARD GUARANTEE
-  if (!Array.isArray(user.templates)) {
-    user.templates = [];
-  }
+  user.templates ??= [];
 
   const template = {
-    id: uuid(),
+    id: crypto.randomUUID(),
     name: workout.name || "Template",
     exercises: workout.exercises.map(ex => ({
       name: ex.name
@@ -222,7 +221,6 @@ function saveTemplateFromWorkout(workout) {
   user.templates.push(template);
   saveState(state);
 }
-
 
 function startWorkoutFromTemplate(templateId) {
   const user = getCurrentUser();
@@ -245,6 +243,7 @@ function startWorkoutFromTemplate(templateId) {
 
   return user.activeWorkout;
 }
+
 function deleteTemplate(templateId) {
   const user = getCurrentUser();
   if (!user || !Array.isArray(user.templates)) return;
@@ -252,4 +251,3 @@ function deleteTemplate(templateId) {
   user.templates = user.templates.filter(t => t.id !== templateId);
   saveState(state);
 }
-
