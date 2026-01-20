@@ -1,7 +1,6 @@
 /* =========================
    State Initialization
    ========================= */
-
 let state = loadState();
 
 if (!state || typeof state !== "object") {
@@ -25,6 +24,18 @@ Object.values(state.users).forEach(user => {
   user.templates ??= [];
   user.exerciseLibrary ??= [];
 });
+
+/* =========================
+   Centralized Persist Helper
+   ========================= */
+function persistState() {
+  saveState(state);
+
+  const user = getCurrentUser();
+  if (user && typeof syncUserData === "function") {
+    syncUserData(user); // 🔒 non-blocking cloud sync
+  }
+}
 
 /* =========================
    Helpers
@@ -87,7 +98,7 @@ function startWorkout() {
 
   user.activeWorkout = createWorkout();
   startTimer(user.activeWorkout);
-  saveState(state);
+  persistState();
   return user.activeWorkout;
 }
 
@@ -105,7 +116,7 @@ function finishWorkout(workout) {
 
   if (!hasWorkoutData(workout)) {
     user.activeWorkout = null;
-    saveState(state);
+    persistState();
     return;
   }
 
@@ -122,7 +133,7 @@ function finishWorkout(workout) {
 
   user.workouts.push(workout);
   user.activeWorkout = null;
-  saveState(state);
+  persistState();
 }
 
 /* =========================
@@ -151,11 +162,7 @@ function addExerciseToWorkout(workout, name) {
     notes: ""
   });
 
-  saveState(state);
-}
-const user = getCurrentUser();
-if (user) {
-  syncUserData(user);
+  persistState();
 }
 
 function addSet(workout, exerciseIndex) {
@@ -167,14 +174,14 @@ function addSet(workout, exerciseIndex) {
     completed: false
   });
 
-  saveState(state);
+  persistState();
 }
 
 function removeSet(workout, exerciseIndex, setIndex) {
   if (!workout) return;
 
   workout.exercises[exerciseIndex].sets.splice(setIndex, 1);
-  saveState(state);
+  persistState();
 }
 
 function updateSet(workout, exIndex, setIndex, field, value) {
@@ -187,7 +194,7 @@ function updateSet(workout, exIndex, setIndex, field, value) {
     set.completed = false;
   }
 
-  saveState(state);
+  persistState();
 }
 
 /* =========================
@@ -223,14 +230,12 @@ function saveTemplateFromWorkout(workout) {
   };
 
   user.templates.push(template);
-  saveState(state);
+  persistState();
 }
 
 function startWorkoutFromTemplate(templateId) {
   const user = getCurrentUser();
   if (!user || !templateId) return null;
-
-  user.templates ??= [];
 
   const template = user.templates.find(t => t.id === templateId);
   if (!template) return null;
@@ -243,7 +248,7 @@ function startWorkoutFromTemplate(templateId) {
   );
 
   startTimer(user.activeWorkout);
-  saveState(state);
+  persistState();
 
   return user.activeWorkout;
 }
@@ -253,5 +258,5 @@ function deleteTemplate(templateId) {
   if (!user || !Array.isArray(user.templates)) return;
 
   user.templates = user.templates.filter(t => t.id !== templateId);
-  saveState(state);
+  persistState();
 }
