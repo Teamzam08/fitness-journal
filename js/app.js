@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const registerScreen = document.getElementById("register-screen");
   const workoutList = document.getElementById("workout-list");
   const logoutBtn = document.getElementById("logout-btn");
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/service-worker.js");
+}
 
   const workoutNameInput = document.getElementById("workout-name");
   const continueBtn = document.getElementById("continue-workout-btn");
