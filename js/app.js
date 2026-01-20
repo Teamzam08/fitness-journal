@@ -97,22 +97,25 @@ if ("serviceWorker" in navigator) {
     }
   });
 
-  document.getElementById("register-btn")?.addEventListener("click", async () => {
-    try {
-      await registerUser(
-        document.getElementById("register-username").value.trim(),
-        document.getElementById("register-password").value
-      );
+document.getElementById("register-btn")?.addEventListener("click", async (e) => {
+  e.preventDefault();
 
-      showApp();
-      showCurrentUser(state.currentUser);
-      renderWorkoutHistory(getCurrentUser().workouts);
-      renderTemplates(getCurrentUser().templates || []);
-      updateHomeButtons();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
+  try {
+    await registerUser(
+      document.getElementById("register-username").value.trim(),
+      document.getElementById("register-password").value
+    );
+
+    showApp();
+    showCurrentUser(state.currentUser);
+    renderWorkoutHistory(getCurrentUser().workouts);
+    renderTemplates(getCurrentUser().templates || []);
+    updateHomeButtons();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
 
   logoutBtn?.addEventListener("click", () => {
     logoutUser();
