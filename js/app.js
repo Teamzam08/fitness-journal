@@ -305,21 +305,28 @@ document.addEventListener("DOMContentLoaded", () => {
   /* =========================
      SAVE TEMPLATE
      ========================= */
-  saveTemplateBtn?.addEventListener("click", () => {
-    if (!activeWorkout) {
-      alert("No active workout to save.");
-      return;
-    }
+saveTemplateBtn?.addEventListener("click", () => {
+  if (!activeWorkout) {
+    alert("No active workout to save.");
+    return;
+  }
 
-    const templateWorkout = structuredClone(activeWorkout);
-    templateWorkout.id = crypto.randomUUID();
-    templateWorkout.date = null;
+  const name =
+    workoutNameInput.value.trim() ||
+    activeWorkout.name ||
+    "New Template";
 
-    saveTemplateFromWorkout(templateWorkout);
-    renderTemplates(getCurrentUser().templates || []);
+  const templateWorkout = structuredClone(activeWorkout);
+  templateWorkout.id = crypto.randomUUID();
+  templateWorkout.name = name;     // ✅ FORCE NAME
+  templateWorkout.date = null;     // templates don’t use dates
 
-    alert("Template saved!");
-  });
+  saveTemplateFromWorkout(templateWorkout);
+  renderTemplates(getCurrentUser().templates || []);
+
+  alert(`Template "${name}" saved!`);
+});
+
 
   /* =========================
      TEMPLATES
