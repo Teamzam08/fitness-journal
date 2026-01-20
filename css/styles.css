@@ -436,3 +436,21 @@ button i {
   height: 32px;
   object-fit: contain;
 }
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+#app,
+main {
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
