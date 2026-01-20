@@ -47,6 +47,11 @@ async function registerUser(username, password) {
     throw new Error("Username and password are required");
   }
 
+  // ✅ GUARANTEE users object exists
+  if (!state.users) {
+    state.users = {};
+  }
+
   if (state.users[username]) {
     throw new Error("User already exists");
   }
@@ -65,6 +70,7 @@ async function registerUser(username, password) {
   state.currentUser = username;
   saveState(state);
 }
+
 
 /* =========================
    Login User
