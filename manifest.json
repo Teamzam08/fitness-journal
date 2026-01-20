@@ -3,8 +3,9 @@
   "short_name": "Journal",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#020617",
   "theme_color": "#0f172a",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icons/icon-192.png",
