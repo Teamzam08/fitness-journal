@@ -1,10 +1,11 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", () => {
   console.log("app.js loaded");
 
   /* =========================
      APP VERSION
      ========================= */
   const APP_VERSION = "1.0.0";
+  console.log("App version:", APP_VERSION);
 
   /* =========================
      DOM REFERENCES
@@ -13,9 +14,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const registerScreen = document.getElementById("register-screen");
   const workoutList = document.getElementById("workout-list");
   const logoutBtn = document.getElementById("logout-btn");
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/service-worker.js");
-}
 
   const workoutNameInput = document.getElementById("workout-name");
   const continueBtn = document.getElementById("continue-workout-btn");
@@ -44,7 +42,6 @@ if ("serviceWorker" in navigator) {
   const modalSuggestions = document.getElementById("exercise-modal-suggestions");
 
   let activeWorkout = null;
-  let lastFinishedWorkout = null;
 
   /* =========================
      SCREEN HELPERS
@@ -54,6 +51,11 @@ if ("serviceWorker" in navigator) {
     registerScreen.hidden = true;
     workoutList.hidden = true;
     logoutBtn.hidden = true;
+  }
+
+  function showRegister() {
+    loginScreen.hidden = true;
+    registerScreen.hidden = false;
   }
 
   function showApp() {
@@ -77,7 +79,7 @@ if ("serviceWorker" in navigator) {
   }
 
   /* =========================
-     AUTH
+     AUTH – LOGIN
      ========================= */
   document.getElementById("login-btn")?.addEventListener("click", async () => {
     try {
@@ -97,25 +99,32 @@ if ("serviceWorker" in navigator) {
     }
   });
 
-document.getElementById("register-btn")?.addEventListener("click", async (e) => {
-  e.preventDefault();
+  /* =========================
+     AUTH – REGISTER
+     ========================= */
+  document.getElementById("show-register-btn")
+    ?.addEventListener("click", showRegister);
 
-  try {
-    await registerUser(
-      document.getElementById("register-username").value.trim(),
-      document.getElementById("register-password").value
-    );
+  document.getElementById("cancel-register-btn")
+    ?.addEventListener("click", showLogin);
 
-    showApp();
-    showCurrentUser(state.currentUser);
-    renderWorkoutHistory(getCurrentUser().workouts);
-    renderTemplates(getCurrentUser().templates || []);
-    updateHomeButtons();
-  } catch (err) {
-    alert(err.message);
-  }
-});
+  document.getElementById("register-btn")
+    ?.addEventListener("click", async () => {
+      try {
+        await registerUser(
+          document.getElementById("register-username").value.trim(),
+          document.getElementById("register-password").value
+        );
 
+        showApp();
+        showCurrentUser(state.currentUser);
+        renderWorkoutHistory(getCurrentUser().workouts);
+        renderTemplates(getCurrentUser().templates || []);
+        updateHomeButtons();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
 
   logoutBtn?.addEventListener("click", () => {
     logoutUser();
@@ -150,7 +159,7 @@ document.getElementById("register-btn")?.addEventListener("click", async (e) => 
   });
 
   /* =========================
-     START / CONTINUE
+     START / CONTINUE WORKOUT
      ========================= */
   newWorkoutBtn?.addEventListener("click", () => {
     activeWorkout = startWorkout();
@@ -202,5 +211,4 @@ document.getElementById("register-btn")?.addEventListener("click", async (e) => 
 
     alert(`Template "${name}" saved!`);
   });
-
 });
