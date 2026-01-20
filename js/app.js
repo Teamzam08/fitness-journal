@@ -1,5 +1,10 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   console.log("app.js loaded");
+
+  /* =========================
+     APP VERSION
+     ========================= */
+  const APP_VERSION = "1.0.0";
 
   /* =========================
      DOM REFERENCES
@@ -8,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerScreen = document.getElementById("register-screen");
   const workoutList = document.getElementById("workout-list");
   const logoutBtn = document.getElementById("logout-btn");
-const APP_VERSION = "1.0.0";
+
   const workoutNameInput = document.getElementById("workout-name");
   const continueBtn = document.getElementById("continue-workout-btn");
   const backToListBtn = document.getElementById("back-to-list-btn");
@@ -34,11 +39,6 @@ const APP_VERSION = "1.0.0";
   const modalInput = document.getElementById("exercise-modal-input");
   const modalAddBtn = document.getElementById("exercise-modal-add-btn");
   const modalSuggestions = document.getElementById("exercise-modal-suggestions");
-try {
-  await syncWorkout(workout);
-} catch {
-  console.warn("Sync failed, will retry");
-}
 
   let activeWorkout = null;
   let lastFinishedWorkout = null;
@@ -111,15 +111,6 @@ try {
     }
   });
 
-  document.getElementById("show-register-btn")?.addEventListener("click", () => {
-    loginScreen.hidden = true;
-    registerScreen.hidden = false;
-  });
-
-  document
-    .getElementById("cancel-register-btn")
-    ?.addEventListener("click", showLogin);
-
   logoutBtn?.addEventListener("click", () => {
     logoutUser();
     location.reload();
@@ -139,7 +130,7 @@ try {
   }
 
   /* =========================
-     WORKOUT HISTORY (VIEW)
+     WORKOUT HISTORY VIEW
      ========================= */
   workoutHistoryEl?.addEventListener("click", e => {
     const li = e.target.closest("li");
@@ -153,7 +144,7 @@ try {
   });
 
   /* =========================
-     START / CONTINUE WORKOUT
+     START / CONTINUE
      ========================= */
   newWorkoutBtn?.addEventListener("click", () => {
     activeWorkout = startWorkout();
@@ -182,188 +173,28 @@ try {
   backBtn?.addEventListener("click", exitWorkoutView);
 
   /* =========================
-     REST SETTINGS
-     ========================= */
-  restToggle?.addEventListener("change", e => {
-    if (!activeWorkout) return;
-    activeWorkout.useRestTimer = e.target.checked;
-    if (!e.target.checked) stopRest();
-  });
-
-  function setRestDuration(seconds) {
-    if (!activeWorkout) return;
-    activeWorkout.restDuration = seconds;
-    activeWorkout.useRestTimer = true;
-    restToggle.checked = true;
-    startRest(seconds);
-  }
-
-  rest30Btn?.addEventListener("click", () => setRestDuration(30));
-  rest60Btn?.addEventListener("click", () => setRestDuration(60));
-  rest90Btn?.addEventListener("click", () => setRestDuration(90));
-  cancelRestBtn?.addEventListener("click", stopRest);
-
-  /* =========================
-     ADD EXERCISE (MODAL)
-     ========================= */
-  addExerciseBtn?.addEventListener("click", () => {
-    if (!activeWorkout) return;
-    openExerciseModal();
-  });
-
-  modalAddBtn?.addEventListener("click", () => {
-    if (!activeWorkout) return;
-
-    const name = modalInput.value.trim();
-    if (!name) return;
-
-    addExerciseToWorkout(activeWorkout, name);
-    renderExercises(activeWorkout);
-
-    modalInput.value = "";
-    clearExerciseModalSuggestions();
-    closeExerciseModal();
-  });
-
-  modalInput?.addEventListener("input", e => {
-    const user = getCurrentUser();
-    if (!user || !Array.isArray(user.exerciseLibrary)) return;
-
-    modalSuggestions.innerHTML = "";
-    user.exerciseLibrary
-      .filter(n => n.toLowerCase().includes(e.target.value.toLowerCase()))
-      .forEach(name => {
-        const li = document.createElement("li");
-        li.textContent = name;
-        li.onclick = () => {
-          modalInput.value = name;
-          clearExerciseModalSuggestions();
-        };
-        modalSuggestions.appendChild(li);
-      });
-  });
-
-  /* =========================
-     SETS (CLICK + INPUT)
-     ========================= */
-  exerciseListEl?.addEventListener("click", e => {
-    if (!activeWorkout) return;
-
-    const addBtn = e.target.closest("[data-add-set]");
-    if (addBtn) {
-      addSet(activeWorkout, Number(addBtn.dataset.addSet));
-      renderExercises(activeWorkout);
-      return;
-    }
-
-    const removeBtn = e.target.closest("[data-remove-set]");
-    if (removeBtn) {
-      removeSet(
-        activeWorkout,
-        Number(removeBtn.dataset.ex),
-        Number(removeBtn.dataset.removeSet)
-      );
-      renderExercises(activeWorkout);
-    }
-  });
-
-  exerciseListEl?.addEventListener("input", e => {
-    if (!activeWorkout) return;
-
-    const { ex, set, field } = e.target.dataset;
-    if (!field) return;
-
-    updateSet(activeWorkout, +ex, +set, field, e.target.value);
-
-    const s = activeWorkout.exercises[ex].sets[set];
-    if (!s.completed && s.weight && s.reps && activeWorkout.useRestTimer) {
-      s.completed = true;
-      startRest(activeWorkout.restDuration || 30);
-    }
-  });
-
-  /* =========================
-     FINISH WORKOUT
-     ========================= */
-  finishBtn?.addEventListener("click", () => {
-    if (!activeWorkout) return;
-
-    stopTimerUI();
-    stopRest();
-
-    activeWorkout.name = workoutNameInput.value || "Untitled Workout";
-    lastFinishedWorkout = structuredClone(activeWorkout);
-
-    finishWorkout(activeWorkout);
-    activeWorkout = null;
-
-    showWorkoutSummary(lastFinishedWorkout);
-  });
-
-  summaryDoneBtn?.addEventListener("click", () => {
-    document.getElementById("workout-summary").hidden = true;
-    showWorkoutList();
-    renderWorkoutHistory(getCurrentUser().workouts);
-    updateHomeButtons();
-  });
-
-  /* =========================
      SAVE TEMPLATE
      ========================= */
-saveTemplateBtn?.addEventListener("click", () => {
-  if (!activeWorkout) {
-    alert("No active workout to save.");
-    return;
-  }
-
-  const name =
-    workoutNameInput.value.trim() ||
-    activeWorkout.name ||
-    "New Template";
-
-  const templateWorkout = structuredClone(activeWorkout);
-  templateWorkout.id = crypto.randomUUID();
-  templateWorkout.name = name;     // ✅ FORCE NAME
-  templateWorkout.date = null;     // templates don’t use dates
-
-  saveTemplateFromWorkout(templateWorkout);
-  renderTemplates(getCurrentUser().templates || []);
-
-  alert(`Template "${name}" saved!`);
-});
-
-
-  /* =========================
-     TEMPLATES
-     ========================= */
-  templateList?.addEventListener("click", e => {
-    const del = e.target.closest(".delete-template-btn");
-    if (del) {
-      if (confirm("Delete this template?")) {
-        deleteTemplate(del.dataset.id);
-        renderTemplates(getCurrentUser().templates || []);
-      }
+  saveTemplateBtn?.addEventListener("click", () => {
+    if (!activeWorkout) {
+      alert("No active workout to save.");
       return;
     }
 
-    const li = e.target.closest("li");
-    if (!li?.dataset.id) return;
+    const name =
+      workoutNameInput.value.trim() ||
+      activeWorkout.name ||
+      "New Template";
 
-    activeWorkout = startWorkoutFromTemplate(li.dataset.id);
-    workoutNameInput.value = activeWorkout.name;
-    syncRestToggle();
+    const templateWorkout = structuredClone(activeWorkout);
+    templateWorkout.id = crypto.randomUUID();
+    templateWorkout.name = name;
+    templateWorkout.date = null;
 
-    showActiveWorkout();
-    renderExercises(activeWorkout);
-    startTimerUI(activeWorkout);
-    updateHomeButtons();
+    saveTemplateFromWorkout(templateWorkout);
+    renderTemplates(getCurrentUser().templates || []);
+
+    alert(`Template "${name}" saved!`);
   });
-});
 
-/* =========================
-   HELPERS
-   ========================= */
-function clearExerciseModalSuggestions() {
-  const list = document.getElementById("exercise-modal-suggestions");
-  if (list) list.innerHTML = "";
-}
+});
