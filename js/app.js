@@ -1,4 +1,3 @@
-const APP_VERSION = "1.0.0";
 document.addEventListener("DOMContentLoaded", () => {
   console.log("app.js loaded");
 
@@ -9,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const registerScreen = document.getElementById("register-screen");
   const workoutList = document.getElementById("workout-list");
   const logoutBtn = document.getElementById("logout-btn");
-
+const APP_VERSION = "1.0.0";
   const workoutNameInput = document.getElementById("workout-name");
   const continueBtn = document.getElementById("continue-workout-btn");
   const backToListBtn = document.getElementById("back-to-list-btn");
@@ -35,6 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalInput = document.getElementById("exercise-modal-input");
   const modalAddBtn = document.getElementById("exercise-modal-add-btn");
   const modalSuggestions = document.getElementById("exercise-modal-suggestions");
+try {
+  await syncWorkout(workout);
+} catch {
+  console.warn("Sync failed, will retry");
+}
 
   let activeWorkout = null;
   let lastFinishedWorkout = null;
