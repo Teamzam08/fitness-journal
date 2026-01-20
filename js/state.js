@@ -153,6 +153,10 @@ function addExerciseToWorkout(workout, name) {
 
   saveState(state);
 }
+const user = getCurrentUser();
+if (user) {
+  syncUserData(user);
+}
 
 function addSet(workout, exerciseIndex) {
   if (!workout) return;
