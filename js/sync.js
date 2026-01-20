@@ -1,3 +1,6 @@
+// js/sync.js
+console.log("sync.js loaded");
+
 async function syncUserData(user) {
   if (!user) return;
 
