@@ -111,7 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
     registerScreen.hidden = false;
   });
 
-  document.getElementById("cancel-register-btn")
+  document
+    .getElementById("cancel-register-btn")
     ?.addEventListener("click", showLogin);
 
   logoutBtn?.addEventListener("click", () => {
@@ -131,21 +132,20 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     showLogin();
   }
-/* =========================
-   WORKOUT HISTORY (VIEW PAST)
-   ========================= */
-workoutHistoryEl?.addEventListener("click", e => {
-  const li = e.target.closest("li");
-  if (!li?.dataset.id) return;
 
-  const workout = getCurrentUser().workouts.find(
-    w => w.id === li.dataset.id
-  );
+  /* =========================
+     WORKOUT HISTORY (VIEW)
+     ========================= */
+  workoutHistoryEl?.addEventListener("click", e => {
+    const li = e.target.closest("li");
+    if (!li?.dataset.id) return;
 
-  if (workout) {
-    renderWorkoutView(workout);
-  }
-});
+    const workout = getCurrentUser().workouts.find(
+      w => w.id === li.dataset.id
+    );
+
+    if (workout) renderWorkoutView(workout);
+  });
 
   /* =========================
      START / CONTINUE WORKOUT
@@ -189,7 +189,7 @@ workoutHistoryEl?.addEventListener("click", e => {
     if (!activeWorkout) return;
     activeWorkout.restDuration = seconds;
     activeWorkout.useRestTimer = true;
-    if (restToggle) restToggle.checked = true;
+    restToggle.checked = true;
     startRest(seconds);
   }
 
@@ -224,13 +224,9 @@ workoutHistoryEl?.addEventListener("click", e => {
     const user = getCurrentUser();
     if (!user || !Array.isArray(user.exerciseLibrary)) return;
 
-    const value = e.target.value.toLowerCase();
     modalSuggestions.innerHTML = "";
-
-    if (!value) return;
-
     user.exerciseLibrary
-      .filter(n => n.toLowerCase().includes(value))
+      .filter(n => n.toLowerCase().includes(e.target.value.toLowerCase()))
       .forEach(name => {
         const li = document.createElement("li");
         li.textContent = name;
@@ -243,8 +239,29 @@ workoutHistoryEl?.addEventListener("click", e => {
   });
 
   /* =========================
-     SETS & AUTO REST
+     SETS (CLICK + INPUT)
      ========================= */
+  exerciseListEl?.addEventListener("click", e => {
+    if (!activeWorkout) return;
+
+    const addBtn = e.target.closest("[data-add-set]");
+    if (addBtn) {
+      addSet(activeWorkout, Number(addBtn.dataset.addSet));
+      renderExercises(activeWorkout);
+      return;
+    }
+
+    const removeBtn = e.target.closest("[data-remove-set]");
+    if (removeBtn) {
+      removeSet(
+        activeWorkout,
+        Number(removeBtn.dataset.ex),
+        Number(removeBtn.dataset.removeSet)
+      );
+      renderExercises(activeWorkout);
+    }
+  });
+
   exerciseListEl?.addEventListener("input", e => {
     if (!activeWorkout) return;
 
@@ -286,24 +303,23 @@ workoutHistoryEl?.addEventListener("click", e => {
   });
 
   /* =========================
-     SAVE TEMPLATE (FIXED)
+     SAVE TEMPLATE
      ========================= */
-saveTemplateBtn?.addEventListener("click", () => {
-  if (!activeWorkout) {
-    alert("No active workout to save.");
-    return;
-  }
+  saveTemplateBtn?.addEventListener("click", () => {
+    if (!activeWorkout) {
+      alert("No active workout to save.");
+      return;
+    }
 
-  const templateWorkout = structuredClone(activeWorkout);
-  templateWorkout.id = crypto.randomUUID();
-  templateWorkout.date = null; // templates don't need dates
+    const templateWorkout = structuredClone(activeWorkout);
+    templateWorkout.id = crypto.randomUUID();
+    templateWorkout.date = null;
 
-  saveTemplateFromWorkout(templateWorkout);
-  renderTemplates(getCurrentUser().templates || []);
+    saveTemplateFromWorkout(templateWorkout);
+    renderTemplates(getCurrentUser().templates || []);
 
-  alert("Template saved!");
-});
-
+    alert("Template saved!");
+  });
 
   /* =========================
      TEMPLATES
@@ -339,4 +355,3 @@ function clearExerciseModalSuggestions() {
   const list = document.getElementById("exercise-modal-suggestions");
   if (list) list.innerHTML = "";
 }
-
