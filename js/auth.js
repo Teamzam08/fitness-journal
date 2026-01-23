@@ -68,6 +68,8 @@ async function registerUser(username, password) {
   };
 
 state.currentUser = username;
+await syncUserToServer(state.users[username]);
+
 
 // 🔥 HYDRATE FROM NEON
 const serverData = await fetchUserFromServer(username);
