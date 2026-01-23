@@ -67,8 +67,32 @@ async function registerUser(username, password) {
     exerciseLibrary: []
   };
 
-  state.currentUser = username;
-  saveState(state);
+state.currentUser = username;
+
+// 🔥 HYDRATE FROM NEON
+const serverData = await fetchUserFromServer(username);
+
+if (serverData) {
+  state.users[username] = serverData;
+} else if (!state.users[username]) {
+  // fallback if brand new user
+  state.users[username] = {
+    workouts: [],
+    activeWorkout: null,
+    exerciseHistory: {},
+    templates: [],
+    exerciseLibrary: []
+  };
+}
+
+if (rememberMe) {
+  markTrustedDevice(username);
+} else {
+  clearTrustedDevice();
+}
+
+saveState(state);
+
 }
 
 
