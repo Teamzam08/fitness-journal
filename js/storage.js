@@ -8,8 +8,14 @@ function loadState() {
 }
 
 function saveState(state) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem("fitnessJournalState", JSON.stringify(state));
+
+  const user = getCurrentUser();
+  if (user) {
+    syncUserToServer(user);
+  }
 }
+
 async function syncUserToServer(user) {
   try {
     await fetch("/.netlify/functions/sync-user", {
