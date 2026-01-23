@@ -30,3 +30,18 @@ async function syncUserToServer(user) {
     console.warn("Offline or sync failed — will retry later");
   }
 }
+async function fetchUserFromServer(username) {
+  try {
+    const res = await fetch(
+      `/.netlify/functions/get-user?username=${encodeURIComponent(username)}`
+    );
+
+    if (!res.ok) return null;
+
+    const result = await res.json();
+    return result.data || null;
+  } catch (err) {
+    console.warn("Failed to fetch user from server");
+    return null;
+  }
+}
