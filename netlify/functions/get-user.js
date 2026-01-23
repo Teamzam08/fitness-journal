@@ -7,41 +7,36 @@ const pool = new Pool({
 });
 
 export async function handler(event) {
-  if (event.httpMethod !== "GET") {
+  if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const username = event.queryStringParameters?.username;
-  if (!username) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Username required" })
-    };
-  }
-
   try {
-    const result = await pool.query(
-      "SELECT data FROM users WHERE username = $1",
-      [username]
-    );
+    const { username, data } = JSON.parse(event.body);
 
-    if (result.rowCount === 0) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ data: null })
-      };
+    if (!username || !data) {
+      return { statusCode: 400, body: "Missing data" };
     }
+
+    await pool.query(
+      `
+      INSERT INTO users (username, data)
+      VALUES ($1, $2)
+      ON CONFLICT (username)
+      DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
+      `,
+      [username, data]
+    );
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ data: result.rows[0].data })
+      body: JSON.stringify({ success: true })
     };
   } catch (err) {
     console.error(err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Database error" })
+      body: JSON.stringify({ error: err.message })
     };
   }
 }
-
