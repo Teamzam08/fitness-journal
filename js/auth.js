@@ -36,21 +36,19 @@ function isTrustedDevice() {
    User Lookup
    ========================= */
 function getUser(username) {
-  return state.users[username] || null;
+  return state.users?.[username] || null;
 }
 
 /* =========================
-   Register User
+   Register User (FIXED)
    ========================= */
 async function registerUser(username, password) {
   if (!username || !password) {
     throw new Error("Username and password are required");
   }
 
-  // ✅ GUARANTEE users object exists
-  if (!state.users) {
-    state.users = {};
-  }
+  // Ensure users object exists
+  state.users ||= {};
 
   if (state.users[username]) {
     throw new Error("User already exists");
@@ -58,7 +56,8 @@ async function registerUser(username, password) {
 
   const passwordHash = await hashPassword(password);
 
-  state.users[username] = {
+  // Create user locally (SOURCE OF TRUTH)
+  const newUser = {
     passwordHash,
     workouts: [],
     activeWorkout: null,
@@ -67,46 +66,45 @@ async function registerUser(username, password) {
     exerciseLibrary: []
   };
 
-state.currentUser = username;
-await syncUserToServer(state.users[username]);
+  state.users[username] = newUser;
+  state.currentUser = username;
 
+  // Persist locally immediately
+  saveState(state);
 
-// 🔥 HYDRATE FROM NEON
-const serverData = await fetchUserFromServer(username);
+  // Sync to Neon (do NOT hydrate back during registration)
+  try {
+    await syncUserToServer(newUser);
+  } catch (err) {
+    console.warn("User created locally, server sync failed", err);
+  }
 
-if (serverData) {
-  state.users[username] = serverData;
-} else if (!state.users[username]) {
-  // fallback if brand new user
-  state.users[username] = {
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: []
-  };
-}
-
-if (rememberMe) {
+  // Registration always trusts device
   markTrustedDevice(username);
-} else {
-  clearTrustedDevice();
 }
-
-saveState(state);
-
-}
-
 
 /* =========================
-   Login User
+   Login User (SERVER FIRST)
    ========================= */
 async function loginUser(username, password, rememberMe = false) {
   if (!username || !password) {
     throw new Error("Username and password are required");
   }
 
-  const user = state.users[username];
+  // Try server first (cross-device login)
+  let serverUser = null;
+  try {
+    serverUser = await fetchUserFromServer(username);
+  } catch (err) {
+    console.warn("Server fetch failed, falling back to local", err);
+  }
+
+  if (serverUser) {
+    state.users ||= {};
+    state.users[username] = serverUser;
+  }
+
+  const user = state.users?.[username];
   if (!user) {
     throw new Error("Invalid username or password");
   }
