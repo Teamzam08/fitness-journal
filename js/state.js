@@ -12,6 +12,28 @@ if (!state || typeof state !== "object") {
 
 state.currentUser ??= null;
 state.users ??= {};
+/* =========================
+   USER DATA MIGRATION
+   ========================= */
+function migrateUser(user) {
+  if (!user || typeof user !== "object") return user;
+
+  // Version 0 → 1 (initial schema)
+  if (!user.version || user.version < 1) {
+    user.workouts ??= [];
+    user.activeWorkout ??= null;
+    user.exerciseHistory ??= {};
+    user.templates ??= [];
+    user.exerciseLibrary ??= [];
+
+    user.version = 1;
+  }
+
+  // 🔮 Future versions go here
+  // if (user.version < 2) { ... }
+
+  return user;
+}
 
 /* =========================
    Normalize Existing Users
