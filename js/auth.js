@@ -78,6 +78,49 @@ async function loginUser(username, password, rememberMe = false) {
     throw new Error("Username and password are required");
   }
 
+  // 1️⃣ Fetch from server
+  const serverUser = await fetchUserFromServer(username);
+  if (!serverUser) {
+    throw new Error("Invalid username or password");
+  }
+
+  // 2️⃣ Verify password
+  const passwordHash = await hashPassword(password);
+  if (passwordHash !== serverUser.passwordHash) {
+    throw new Error("Invalid username or password");
+  }
+
+  // 3️⃣ Clone BEFORE migration
+  const beforeMigration = structuredClone(serverUser);
+
+  // 4️⃣ Migrate
+  const migratedUser = migrateUser(serverUser);
+
+  // 5️⃣ If migration changed data → push back to Neon
+  if (!deepEqual(beforeMigration, migratedUser)) {
+    try {
+      await syncUserToServer(migratedUser);
+      console.log("Server user auto-upgraded");
+    } catch (err) {
+      console.warn("Server upgrade failed (safe)", err);
+    }
+  }
+
+  // 6️⃣ Save locally
+  state.users ??= {};
+  state.users[username] = migratedUser;
+  state.currentUser = username;
+
+  if (rememberMe) {
+    markTrustedDevice(username);
+  } else {
+    clearTrustedDevice();
+  }
+
+  saveState(state);
+}
+
+
   // Attempt server fetch first (cross-device support)
   let serverUser = null;
   try {
