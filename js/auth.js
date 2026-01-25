@@ -4,7 +4,6 @@
 
 /**
  * Hash password (SHA-256)
- * Browser-native, secure
  */
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -42,7 +41,6 @@ async function registerUser(username, password) {
 
   const passwordHash = await hashPassword(password);
 
-  // Create canonical user object
   const newUser = {
     version: 1,
     passwordHash,
@@ -53,20 +51,19 @@ async function registerUser(username, password) {
     exerciseLibrary: []
   };
 
-  // Save locally FIRST (offline-safe)
+  // Save locally first
   state.users ||= {};
   state.users[username] = newUser;
   state.currentUser = username;
   saveState(state);
 
-  // Push to Neon (non-blocking)
+  // Push to server (non-blocking)
   try {
     await syncUserToServer(newUser);
   } catch (err) {
     console.warn("Server sync failed (offline-safe)", err);
   }
 
-  // Registration always trusts device
   markTrustedDevice(username);
 }
 
@@ -78,57 +75,8 @@ async function loginUser(username, password, rememberMe = false) {
     throw new Error("Username and password are required");
   }
 
-  // 1️⃣ Fetch from server
+  // Fetch from Neon
   const serverUser = await fetchUserFromServer(username);
-  if (!serverUser) {
-    throw new Error("Invalid username or password");
-  }
-
-  // 2️⃣ Verify password
-  const passwordHash = await hashPassword(password);
-  if (passwordHash !== serverUser.passwordHash) {
-    throw new Error("Invalid username or password");
-  }
-
-  // 3️⃣ Clone BEFORE migration
-  const beforeMigration = structuredClone(serverUser);
-
-  // 4️⃣ Migrate
-  const migratedUser = migrateUser(serverUser);
-
-  // 5️⃣ If migration changed data → push back to Neon
-  if (!deepEqual(beforeMigration, migratedUser)) {
-    try {
-      await syncUserToServer(migratedUser);
-      console.log("Server user auto-upgraded");
-    } catch (err) {
-      console.warn("Server upgrade failed (safe)", err);
-    }
-  }
-
-  // 6️⃣ Save locally
-  state.users ??= {};
-  state.users[username] = migratedUser;
-  state.currentUser = username;
-
-  if (rememberMe) {
-    markTrustedDevice(username);
-  } else {
-    clearTrustedDevice();
-  }
-
-  saveState(state);
-}
-
-
-  // Attempt server fetch first (cross-device support)
-  let serverUser = null;
-  try {
-    serverUser = await fetchUserFromServer(username);
-  } catch (err) {
-    console.warn("Server fetch failed, falling back to local", err);
-  }
-
   if (!serverUser) {
     throw new Error("Invalid username or password");
   }
@@ -139,17 +87,12 @@ async function loginUser(username, password, rememberMe = false) {
     throw new Error("Invalid username or password");
   }
 
-  // 🔥 NORMALIZE SERVER-HYDRATED USER
-  serverUser.version ??= 1;
-  serverUser.workouts ??= [];
-  serverUser.activeWorkout ??= null;
-  serverUser.exerciseHistory ??= {};
-  serverUser.templates ??= [];
-  serverUser.exerciseLibrary ??= [];
+  // Normalize / migrate server user
+  const migratedUser = migrateUser(serverUser);
 
-  // Hydrate local state
+  // Save locally
   state.users ||= {};
-  state.users[username] = serverUser;
+  state.users[username] = migratedUser;
   state.currentUser = username;
 
   if (rememberMe) {
@@ -169,6 +112,10 @@ function logoutUser() {
   clearTrustedDevice();
   saveState(state);
 }
+
+/* =========================
+   Utilities
+   ========================= */
 function deepEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
