@@ -1,4 +1,8 @@
 async function registerUser(username, password) {
+  if (!username || !password) {
+    throw new Error("Username and password are required");
+  }
+
   const passwordHash = await hashPassword(password);
 
   const res = await fetch("/.netlify/functions/register", {
@@ -7,14 +11,17 @@ async function registerUser(username, password) {
     body: JSON.stringify({ username, passwordHash })
   });
 
-  const data = await res.json();
-
   if (!res.ok) {
-    throw new Error(data.error || "Registration failed");
+    const err = await res.text();
+    throw new Error(err || "Registration failed");
   }
 
-  state.currentUser = data.username;
-  state.users[data.username] = data.data;
+  const data = await res.json();
+
+  // ✅ SERVER RETURNS FULL USER DATA
+  state.users ??= {};
+  state.users[username] = data;
+  state.currentUser = username;
+
   saveState(state);
 }
-
