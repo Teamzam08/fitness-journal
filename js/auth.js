@@ -3,7 +3,7 @@
    ========================= */
 
 /**
- * Hash password (client-side, SHA-256)
+ * Hash password (SHA-256)
  */
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -32,7 +32,7 @@ function isTrustedDevice() {
 }
 
 /* =========================
-   Register User (SERVER FIRST)
+   Register User (LOCAL → SERVER)
    ========================= */
 async function registerUser(username, password) {
   if (!username || !password) {
@@ -41,53 +41,55 @@ async function registerUser(username, password) {
 
   const passwordHash = await hashPassword(password);
 
-  const res = await fetch("/.netlify/functions/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, passwordHash })
-  });
+  // Create user payload
+  const newUser = {
+    passwordHash,
+    workouts: [],
+    activeWorkout: null,
+    exerciseHistory: {},
+    templates: [],
+    exerciseLibrary: []
+  };
 
-  if (!res.ok) {
-    throw new Error(await res.text());
+  // Save locally FIRST
+  state.users ??= {};
+  state.users[username] = newUser;
+  state.currentUser = username;
+  saveState(state);
+
+  // Push to Neon (non-blocking)
+  try {
+    await syncUserToServer(newUser);
+  } catch (err) {
+    console.warn("Server sync failed (offline-safe)", err);
   }
 
-  // Server returns full user object
-  const userData = await res.json();
-
-  // Hydrate local state from server
-  state.users ||= {};
-  state.users[username] = userData;
-  state.currentUser = username;
-
+  // Registration always trusts device
   markTrustedDevice(username);
-  saveState(state);
 }
 
 /* =========================
-   Login User (SERVER FIRST)
+   Login User (SERVER → LOCAL)
    ========================= */
 async function loginUser(username, password, rememberMe = false) {
   if (!username || !password) {
     throw new Error("Username and password are required");
   }
 
-  const passwordHash = await hashPassword(password);
-
-  const res = await fetch("/.netlify/functions/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, passwordHash })
-  });
-
-  if (!res.ok) {
-    throw new Error(await res.text());
+  // Fetch user from Neon
+  const serverUser = await fetchUserFromServer(username);
+  if (!serverUser) {
+    throw new Error("Invalid username or password");
   }
 
-  const userData = await res.json();
+  const passwordHash = await hashPassword(password);
+  if (passwordHash !== serverUser.passwordHash) {
+    throw new Error("Invalid username or password");
+  }
 
-  // Hydrate local state
-  state.users ||= {};
-  state.users[username] = userData;
+  // Hydrate local state from server
+  state.users ??= {};
+  state.users[username] = serverUser;
   state.currentUser = username;
 
   if (rememberMe) {
