@@ -42,14 +42,16 @@ async function registerUser(username, password) {
   const passwordHash = await hashPassword(password);
 
   // Create user payload
-  const newUser = {
-    passwordHash,
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: []
-  };
+const newUser = {
+  version: 1,
+  passwordHash,
+  workouts: [],
+  activeWorkout: null,
+  exerciseHistory: {},
+  templates: [],
+  exerciseLibrary: []
+};
+
 
   // Save locally FIRST
   state.users ??= {};
