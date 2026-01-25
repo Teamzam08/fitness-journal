@@ -1,135 +1,25 @@
-/* =========================
-   Authentication Helpers
-   ========================= */
-
-/**
- * Hash a password using SHA-256
- * Browser-native, secure, no dependencies
- */
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/* =========================
-   Trusted Device Helpers
-   ========================= */
-function markTrustedDevice(username) {
-  localStorage.setItem("trustedUser", username);
-}
-
-function clearTrustedDevice() {
-  localStorage.removeItem("trustedUser");
-}
-
-function isTrustedDevice() {
-  const trustedUser = localStorage.getItem("trustedUser");
-  return trustedUser && trustedUser === state.currentUser;
-}
-
-/* =========================
-   User Lookup
-   ========================= */
-function getUser(username) {
-  return state.users?.[username] || null;
-}
-
-/* =========================
-   Register User (FIXED)
-   ========================= */
 async function registerUser(username, password) {
   if (!username || !password) {
     throw new Error("Username and password are required");
   }
 
-  // Ensure users object exists
-  state.users ||= {};
-
-  if (state.users[username]) {
-    throw new Error("User already exists");
-  }
-
   const passwordHash = await hashPassword(password);
 
-  // Create user locally (SOURCE OF TRUTH)
-  const newUser = {
-    passwordHash,
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: []
-  };
+  const res = await fetch("/.netlify/functions/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, passwordHash })
+  });
 
-  state.users[username] = newUser;
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
+
+  const data = await res.json();
+
+  state.users ??= {};
+  state.users[username] = data;
   state.currentUser = username;
 
-  // Persist locally immediately
-  saveState(state);
-
-  // Sync to Neon (do NOT hydrate back during registration)
-  try {
-    await syncUserToServer(newUser);
-  } catch (err) {
-    console.warn("User created locally, server sync failed", err);
-  }
-
-  // Registration always trusts device
-  markTrustedDevice(username);
-}
-
-/* =========================
-   Login User (SERVER FIRST)
-   ========================= */
-async function loginUser(username, password, rememberMe = false) {
-  if (!username || !password) {
-    throw new Error("Username and password are required");
-  }
-
-  // Try server first (cross-device login)
-  let serverUser = null;
-  try {
-    serverUser = await fetchUserFromServer(username);
-  } catch (err) {
-    console.warn("Server fetch failed, falling back to local", err);
-  }
-
-  if (serverUser) {
-    state.users ||= {};
-    state.users[username] = serverUser;
-  }
-
-  const user = state.users?.[username];
-  if (!user) {
-    throw new Error("Invalid username or password");
-  }
-
-  const passwordHash = await hashPassword(password);
-  if (passwordHash !== user.passwordHash) {
-    throw new Error("Invalid username or password");
-  }
-
-  state.currentUser = username;
-
-  if (rememberMe) {
-    markTrustedDevice(username);
-  } else {
-    clearTrustedDevice();
-  }
-
-  saveState(state);
-}
-
-/* =========================
-   Logout
-   ========================= */
-function logoutUser() {
-  state.currentUser = null;
-  clearTrustedDevice();
   saveState(state);
 }
