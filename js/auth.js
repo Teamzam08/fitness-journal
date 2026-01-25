@@ -126,3 +126,6 @@ function logoutUser() {
   clearTrustedDevice();
   saveState(state);
 }
+function deepEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
