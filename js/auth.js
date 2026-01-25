@@ -4,6 +4,7 @@
 
 /**
  * Hash password (SHA-256)
+ * Browser-native, secure
  */
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -41,20 +42,19 @@ async function registerUser(username, password) {
 
   const passwordHash = await hashPassword(password);
 
-  // Create user payload
-const newUser = {
-  version: 1,
-  passwordHash,
-  workouts: [],
-  activeWorkout: null,
-  exerciseHistory: {},
-  templates: [],
-  exerciseLibrary: []
-};
+  // Create canonical user object
+  const newUser = {
+    version: 1,
+    passwordHash,
+    workouts: [],
+    activeWorkout: null,
+    exerciseHistory: {},
+    templates: [],
+    exerciseLibrary: []
+  };
 
-
-  // Save locally FIRST
-  state.users ??= {};
+  // Save locally FIRST (offline-safe)
+  state.users ||= {};
   state.users[username] = newUser;
   state.currentUser = username;
   saveState(state);
@@ -78,19 +78,34 @@ async function loginUser(username, password, rememberMe = false) {
     throw new Error("Username and password are required");
   }
 
-  // Fetch user from Neon
-  const serverUser = await fetchUserFromServer(username);
+  // Attempt server fetch first (cross-device support)
+  let serverUser = null;
+  try {
+    serverUser = await fetchUserFromServer(username);
+  } catch (err) {
+    console.warn("Server fetch failed, falling back to local", err);
+  }
+
   if (!serverUser) {
     throw new Error("Invalid username or password");
   }
 
+  // Verify password
   const passwordHash = await hashPassword(password);
   if (passwordHash !== serverUser.passwordHash) {
     throw new Error("Invalid username or password");
   }
 
-  // Hydrate local state from server
-  state.users ??= {};
+  // 🔥 NORMALIZE SERVER-HYDRATED USER
+  serverUser.version ??= 1;
+  serverUser.workouts ??= [];
+  serverUser.activeWorkout ??= null;
+  serverUser.exerciseHistory ??= {};
+  serverUser.templates ??= [];
+  serverUser.exerciseLibrary ??= [];
+
+  // Hydrate local state
+  state.users ||= {};
   state.users[username] = serverUser;
   state.currentUser = username;
 
