@@ -1,27 +1,58 @@
-async function registerUser(username, password) {
-  if (!username || !password) {
-    throw new Error("Username and password are required");
+import { Client } from "pg";
+
+export async function handler(event) {
+  if (event.httpMethod !== "POST") {
+    return {
+      statusCode: 405,
+      body: "Method Not Allowed"
+    };
   }
 
-  const passwordHash = await hashPassword(password);
+  const { username, passwordHash } = JSON.parse(event.body || "{}");
 
-  const res = await fetch("/.netlify/functions/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, passwordHash })
+  if (!username || !passwordHash) {
+    return {
+      statusCode: 400,
+      body: "Missing username or password"
+    };
+  }
+
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || "Registration failed");
+  try {
+    await client.connect();
+
+    const userData = {
+      workouts: [],
+      templates: [],
+      exerciseHistory: {},
+      exerciseLibrary: [],
+      activeWorkout: null
+    };
+
+    await client.query(
+      `
+      INSERT INTO users (username, data, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (username)
+      DO NOTHING
+      `,
+      [username, userData]
+    );
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify(userData)
+    };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: err.message
+    };
+  } finally {
+    await client.end();
   }
-
-  const data = await res.json();
-
-  // ✅ SERVER RETURNS FULL USER DATA
-  state.users ??= {};
-  state.users[username] = data;
-  state.currentUser = username;
-
-  saveState(state);
 }
