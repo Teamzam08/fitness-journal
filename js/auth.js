@@ -52,9 +52,25 @@ function normalizeUser(user) {
    Register User (LOCAL → SERVER)
    ========================= */
 async function registerUser(username, password) {
-  if (!username || !password) {
-    throw new Error("Username and password are required");
+  const res = await fetch("/.netlify/functions/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  if (!res.ok) {
+    throw new Error(await res.text());
   }
+
+  const user = await res.json();
+
+  state.users ??= {};
+  state.users[username] = user;
+  state.currentUser = username;
+
+  saveState(state);
+}
+
 
   const passwordHash = await hashPassword(password);
 
