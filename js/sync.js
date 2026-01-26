@@ -1,4 +1,14 @@
 // js/sync.js
+const SYNC_QUEUE_KEY = "syncQueue";
+
+function getSyncQueue() {
+  return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || "[]");
+}
+
+function setSyncQueue(queue) {
+  localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+}
+
 console.log("sync.js loaded");
 
 /* =========================
