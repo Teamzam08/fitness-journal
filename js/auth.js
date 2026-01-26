@@ -2,20 +2,6 @@
    Authentication Helpers
    ========================= */
 
-/**
- * Hash password (SHA-256)
- * Browser-native, secure
- */
-async function hashPassword(password) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 /* =========================
    Trusted Device Helpers
    ========================= */
@@ -33,7 +19,7 @@ function isTrustedDevice() {
 }
 
 /* =========================
-   USER NORMALIZATION
+   User Normalization
    ========================= */
 function normalizeUser(user) {
   return {
@@ -49,9 +35,13 @@ function normalizeUser(user) {
 }
 
 /* =========================
-   Register User (LOCAL → SERVER)
+   Register User (SERVER ONLY)
    ========================= */
 async function registerUser(username, password) {
+  if (!username || !password) {
+    throw new Error("Username and password are required");
+  }
+
   const res = await fetch("/.netlify/functions/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -62,48 +52,24 @@ async function registerUser(username, password) {
     throw new Error(await res.text());
   }
 
-  const user = await res.json();
+  const serverUser = normalizeUser(await res.json());
 
   state.users ??= {};
-  state.users[username] = user;
+  state.users[username] = serverUser;
   state.currentUser = username;
-
-  saveState(state);
-}
-
-
-  const passwordHash = await hashPassword(password);
-
-  const newUser = normalizeUser({
-    passwordHash,
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: [],
-    updatedAt: Date.now()
-  });
-
-  // Save locally FIRST
-  state.users ||= {};
-  state.users[username] = newUser;
-  state.currentUser = username;
-  saveState(state);
-
-  // Push to server (safe, non-blocking)
-  try {
-    await syncUserToServer(newUser);
-  } catch (err) {
-    console.warn("Server sync failed (offline-safe)", err);
-  }
 
   markTrustedDevice(username);
+  saveState(state);
 }
 
 /* =========================
-   Login User (CONFLICT SAFE)
+   Login User (SERVER → LOCAL)
    ========================= */
 async function loginUser(username, password, rememberMe = false) {
+  if (!username || !password) {
+    throw new Error("Username and password are required");
+  }
+
   const res = await fetch("/.netlify/functions/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -114,63 +80,10 @@ async function loginUser(username, password, rememberMe = false) {
     throw new Error("Invalid username or password");
   }
 
-  const user = await res.json();
+  const serverUser = normalizeUser(await res.json());
 
   state.users ??= {};
-  state.users[username] = user;
-  state.currentUser = username;
-
-  if (rememberMe) {
-    localStorage.setItem("trustedUser", username);
-  }
-
-  saveState(state);
-}
-
-
-  // Fetch server copy
-  const serverUserRaw = await fetchUserFromServer(username);
-  if (!serverUserRaw) {
-    throw new Error("Invalid username or password");
-  }
-
-  const serverUser = normalizeUser(serverUserRaw);
-
-  // Verify password
-  const passwordHash = await hashPassword(password);
-  if (passwordHash !== serverUser.passwordHash) {
-    throw new Error("Invalid username or password");
-  }
-
-  // Local copy (if exists)
-  const localUser = state.users?.[username];
-
-  let finalUser;
-
-  if (
-    localUser &&
-    localUser.updatedAt &&
-    localUser.updatedAt > serverUser.updatedAt
-  ) {
-    // LOCAL IS NEWER → push it up
-    finalUser = localUser;
-
-    try {
-      await syncUserToServer(localUser);
-      console.log("Local user pushed to server (newer)");
-    } catch (err) {
-      console.warn("Failed to push newer local user", err);
-    }
-  } else {
-    // SERVER IS NEWER → hydrate locally
-    finalUser = serverUser;
-  }
-
-  // Touch timestamp (fresh login)
-  finalUser.updatedAt = Date.now();
-
-  state.users ||= {};
-  state.users[username] = finalUser;
+  state.users[username] = serverUser;
   state.currentUser = username;
 
   if (rememberMe) {
