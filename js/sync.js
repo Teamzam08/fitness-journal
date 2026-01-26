@@ -64,3 +64,27 @@ async function fetchUserFromServer(username) {
     return null;
   }
 }
+
+
+async function processSyncQueue() {
+  const queue = getSyncQueue();
+  if (!queue.length) return;
+
+  const remaining = [];
+
+  for (const item of queue) {
+    try {
+      const res = await fetch("/.netlify/functions/sync-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item)
+      });
+
+      if (!res.ok) throw new Error("Retry failed");
+    } catch {
+      remaining.push(item);
+    }
+  }
+
+  setSyncQueue(remaining);
+}
