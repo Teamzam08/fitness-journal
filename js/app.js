@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const modalInput = document.getElementById("exercise-modal-input");
   const modalAddBtn = document.getElementById("exercise-modal-add-btn");
   const modalSuggestions = document.getElementById("exercise-modal-suggestions");
+window.addEventListener("online", processSyncQueue);
+processSyncQueue();
 
   let activeWorkout = null;
 
