@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
-import pkg from "pg";
-const { Client } = pkg;
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
@@ -10,31 +14,25 @@ export async function handler(event) {
   const { username, password } = JSON.parse(event.body || "{}");
 
   if (!username || !password) {
-    return { statusCode: 400, body: "Missing username or password" };
+    return { statusCode: 400, body: "Missing credentials" };
   }
 
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-
   try {
-    await client.connect();
-
-    const result = await client.query(
+    const result = await pool.query(
       "SELECT data FROM users WHERE username = $1",
       [username]
     );
 
     if (result.rows.length === 0) {
-      return { statusCode: 401, body: "Invalid credentials" };
+      return { statusCode: 401, body: "Invalid username or password" };
     }
 
     const user = result.rows[0].data;
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
-    if (!valid) {
-      return { statusCode: 401, body: "Invalid credentials" };
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+
+    if (!isValid) {
+      return { statusCode: 401, body: "Invalid username or password" };
     }
 
     return {
@@ -42,12 +40,9 @@ export async function handler(event) {
       body: JSON.stringify(user)
     };
   } catch (err) {
-    console.error(err);
     return {
       statusCode: 500,
       body: err.message
     };
-  } finally {
-    await client.end();
   }
 }
