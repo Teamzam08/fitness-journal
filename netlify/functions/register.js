@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import pkg from "pg";
 const { Client } = pkg;
 
@@ -6,9 +7,9 @@ export async function handler(event) {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
 
-  const { username, passwordHash } = JSON.parse(event.body || "{}");
+  const { username, password } = JSON.parse(event.body || "{}");
 
-  if (!username || !passwordHash) {
+  if (!username || !password) {
     return { statusCode: 400, body: "Missing username or password" };
   }
 
@@ -17,48 +18,41 @@ export async function handler(event) {
     ssl: { rejectUnauthorized: false }
   });
 
-  const userData = {
-    version: 1,
-    passwordHash,
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: [],
-    updatedAt: Date.now()
-  };
-
   try {
     await client.connect();
 
-    const result = await client.query(
+    // 🔐 HASH PASSWORD SERVER-SIDE
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const userData = {
+      version: 1,
+      passwordHash,
+      workouts: [],
+      activeWorkout: null,
+      exerciseHistory: {},
+      templates: [],
+      exerciseLibrary: []
+    };
+
+    await client.query(
       `
       INSERT INTO users (username, data, updated_at)
       VALUES ($1, $2, NOW())
       ON CONFLICT (username)
       DO NOTHING
-      RETURNING data
       `,
       [username, userData]
     );
-
-    // 🚨 Username already exists
-    if (result.rowCount === 0) {
-      return {
-        statusCode: 409,
-        body: "User already exists"
-      };
-    }
 
     return {
       statusCode: 200,
       body: JSON.stringify(userData)
     };
   } catch (err) {
-    console.error("Register error:", err);
+    console.error(err);
     return {
       statusCode: 500,
-      body: "Server error"
+      body: err.message
     };
   } finally {
     await client.end();
