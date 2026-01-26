@@ -41,15 +41,17 @@ async function registerUser(username, password) {
 
   const passwordHash = await hashPassword(password);
 
-  const newUser = {
-    version: 1,
-    passwordHash,
-    workouts: [],
-    activeWorkout: null,
-    exerciseHistory: {},
-    templates: [],
-    exerciseLibrary: []
-  };
+const newUser = {
+  version: 1,
+  passwordHash,
+  workouts: [],
+  activeWorkout: null,
+  exerciseHistory: {},
+  templates: [],
+  exerciseLibrary: [],
+  updatedAt: Date.now()
+};
+
 
   // Save locally first
   state.users ||= {};
