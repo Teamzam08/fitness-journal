@@ -1,6 +1,10 @@
 import bcrypt from "bcryptjs";
-import pkg from "pg";
-const { Client } = pkg;
+import { Pool } from "pg";
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 export async function handler(event) {
   if (event.httpMethod !== "POST") {
@@ -13,28 +17,21 @@ export async function handler(event) {
     return { statusCode: 400, body: "Missing username or password" };
   }
 
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  const userData = {
+    version: 1,
+    passwordHash,
+    workouts: [],
+    activeWorkout: null,
+    exerciseHistory: {},
+    templates: [],
+    exerciseLibrary: [],
+    updatedAt: Date.now()
+  };
 
   try {
-    await client.connect();
-
-    // 🔐 HASH PASSWORD SERVER-SIDE
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    const userData = {
-      version: 1,
-      passwordHash,
-      workouts: [],
-      activeWorkout: null,
-      exerciseHistory: {},
-      templates: [],
-      exerciseLibrary: []
-    };
-
-    await client.query(
+    await pool.query(
       `
       INSERT INTO users (username, data, updated_at)
       VALUES ($1, $2, NOW())
@@ -49,12 +46,9 @@ export async function handler(event) {
       body: JSON.stringify(userData)
     };
   } catch (err) {
-    console.error(err);
     return {
       statusCode: 500,
       body: err.message
     };
-  } finally {
-    await client.end();
   }
 }
