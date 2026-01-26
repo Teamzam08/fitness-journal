@@ -17,19 +17,28 @@ console.log("sync.js loaded");
 async function syncUserToServer(user) {
   if (!user || !state.currentUser) return;
 
+  const payload = {
+    username: state.currentUser,
+    data: user
+  };
+
   try {
-    await fetch("/.netlify/functions/sync-user", {
+    const res = await fetch("/.netlify/functions/sync-user", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: state.currentUser,
-        data: user
-      })
+      body: JSON.stringify(payload)
     });
+
+    if (!res.ok) throw new Error("Sync failed");
   } catch (err) {
-    console.warn("Cloud sync failed (offline-safe)", err);
+    console.warn("Sync failed, queued for retry");
+
+    const queue = getSyncQueue();
+    queue.push(payload);
+    setSyncQueue(queue);
   }
 }
+
 
 /* =========================
    FETCH USER FROM NEON
