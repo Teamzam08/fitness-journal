@@ -104,9 +104,29 @@ async function registerUser(username, password) {
    Login User (CONFLICT SAFE)
    ========================= */
 async function loginUser(username, password, rememberMe = false) {
-  if (!username || !password) {
-    throw new Error("Username and password are required");
+  const res = await fetch("/.netlify/functions/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  if (!res.ok) {
+    throw new Error("Invalid username or password");
   }
+
+  const user = await res.json();
+
+  state.users ??= {};
+  state.users[username] = user;
+  state.currentUser = username;
+
+  if (rememberMe) {
+    localStorage.setItem("trustedUser", username);
+  }
+
+  saveState(state);
+}
+
 
   // Fetch server copy
   const serverUserRaw = await fetchUserFromServer(username);
