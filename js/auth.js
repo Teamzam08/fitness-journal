@@ -108,10 +108,17 @@ async function loginUser(username, password, rememberMe = false) {
    Logout
    ========================= */
 function logoutUser() {
+  const user = state.users?.[state.currentUser];
+
+  if (user) {
+    syncUserToServer(user);
+  }
+
   state.currentUser = null;
   clearTrustedDevice();
   saveState(state);
 }
+
 
 /* =========================
    Utilities
