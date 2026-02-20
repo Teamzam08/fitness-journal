@@ -500,4 +500,3 @@ function closeExerciseModal() {
 
   modal.hidden = true;
 }
-
