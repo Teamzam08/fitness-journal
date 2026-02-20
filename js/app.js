@@ -1,5 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
   console.log("app.js loaded");
+document.addEventListener("click", (e) => {
+  if (e.target.id === "add-exercise-btn") {
+    handleAddExercise();
+  }
+});
 
   /* =========================
      APP VERSION
