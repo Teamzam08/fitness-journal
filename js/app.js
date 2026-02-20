@@ -48,7 +48,7 @@ document.addEventListener("click", (e) => {
 window.addEventListener("online", processSyncQueue);
 processSyncQueue();
 
-  let activeWorkout = null;
+  window.activeWorkout = null;
 
   /* =========================
      SCREEN HELPERS
